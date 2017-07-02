@@ -10,6 +10,7 @@ namespace Downloader
 {
     class Program
     {
+        private static int deleteOverXDays = 30;
         static void Main(string[] args)
         {
             if (args.Length >= 4)
@@ -17,6 +18,18 @@ namespace Downloader
                 if (!System.IO.Directory.Exists("Download"))
                 {
                     System.IO.Directory.CreateDirectory("Download");
+                }
+
+                int.TryParse(ConfigurationManager.AppSettings["DeleteEmailOverDaysOld"], out deleteOverXDays);
+
+                if (args.Length == 6)
+                {
+                    int.TryParse(args[5], out deleteOverXDays);
+                }
+
+                if (deleteOverXDays <= 0)
+                {
+                    deleteOverXDays = 31;
                 }
 
                 string userName = args[2];
@@ -52,9 +65,10 @@ namespace Downloader
             else
             {
                 Console.WriteLine("Syntax:");
-                Console.WriteLine("Downloader server port user pass usessl");
+                Console.WriteLine("Downloader <server> <port> <user> <pass> <usessl> <deleteoverxdays>");
                 Console.WriteLine("server, port, user and pass are required");
                 Console.WriteLine("usessl: can be 0 => Disable, 1 => Enabled");
+                Console.WriteLine("deleveoverxdays: (Optional) If provided will override the value in config file");
             }
         }
 
@@ -115,7 +129,7 @@ namespace Downloader
                             str.CopyTo(file.BaseStream);
                         }
 
-                        if (summary.Envelope.Date.Value <= DateTime.UtcNow.AddMonths(-1))
+                        if (summary.Envelope.Date.Value <= DateTime.UtcNow.AddDays(deleteOverXDays * -1))
                         {
                             Console.WriteLine("Removing old message from this folder");
                             folder.AddFlags(x, MailKit.MessageFlags.Deleted, true);
